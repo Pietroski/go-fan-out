@@ -14,8 +14,14 @@ type (
 	}
 )
 
-func New() *KafkaConsumerService {
-	return &KafkaConsumerService{}
+func New(
+	limit int,
+	taskChannel chan task_model.Task,
+) *KafkaConsumerService {
+	return &KafkaConsumerService{
+		limiter:     make(chan struct{}, limit),
+		taskChannel: taskChannel,
+	}
 }
 
 func (s *KafkaConsumerService) StartConsuming() error {

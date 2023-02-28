@@ -14,8 +14,14 @@ type (
 	}
 )
 
-func New() *Worker {
-	return &Worker{}
+func New(
+	taskChannel chan task_model.Task,
+	resultChannel chan task_model.Task,
+) *Worker {
+	return &Worker{
+		taskChannel:   taskChannel,
+		resultChannel: resultChannel,
+	}
 }
 
 func (s *Worker) StartConsuming() {

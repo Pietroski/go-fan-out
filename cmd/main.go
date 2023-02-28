@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	task_model "fan-out/internal/models/task"
+	"log"
+	"runtime"
 
 	kafka_consumer_service "fan-out/internal/services/consumer/kafka"
 	result_processor_service "fan-out/internal/services/result-processor"
@@ -11,23 +14,33 @@ import (
 func main() {
 	_, cnlFn := context.WithCancel(context.Background())
 
-	kafkaConsumer := kafka_consumer_service.New()
-	worker := worker_service.New()
-	resultProcessor := result_processor_service.New()
+	limit := 5 // taken by and env variable
+	taskChannel := make(chan task_model.Task, 50)
+	resultChannel := make(chan task_model.Task, 50)
 
-	go func() {
-		worker.StartConsuming()
-	}()
+	kafkaConsumer := kafka_consumer_service.New(limit, taskChannel)
+	worker := worker_service.New(taskChannel, resultChannel)
+	resultProcessor := result_processor_service.New(limit, resultChannel)
+
+	workerPoolNumber := 10 // taken by and env variable
+	for idx := 0; idx < workerPoolNumber; idx++ {
+		go func() {
+			worker.StartConsuming()
+		}()
+	}
 
 	go func() {
 		resultProcessor.StartConsuming()
 	}()
 
+	log.Println("GOROUTINE COUNT ->", runtime.NumGoroutine())
 	err := kafkaConsumer.StartConsuming()
 	if err != nil {
 		cnlFn()
+		log.Println("GOROUTINE COUNT ->", runtime.NumGoroutine())
 		panic("consuming")
 	}
+	log.Println("GOROUTINE COUNT ->", runtime.NumGoroutine())
 }
 
 //var (

@@ -16,8 +16,14 @@ type (
 	}
 )
 
-func New() *ResultProcessor {
-	return &ResultProcessor{}
+func New(
+	limit int,
+	resultChannel chan task_model.Task,
+) *ResultProcessor {
+	return &ResultProcessor{
+		limiter:       make(chan struct{}, limit),
+		resultChannel: resultChannel,
+	}
 }
 
 func (s *ResultProcessor) StartConsuming() {
